@@ -11,13 +11,12 @@ export class Node {
 }
 
 export class Tree {
-	constructor(arr = [], root = null) {
-		this.arr = Utils.sortAndDedupe(arr);
-		this.root = root;
+	constructor(valuesArray = [], root = null) {
+		this.root = this.buildTree(valuesArray);
 	}
 
-	buildTree() {
-		const array = Utils.sortAndDedupe(this.arr);;
+	buildTree(valuesArray) {
+		const array = Utils.sortAndDedupe(valuesArray);;
 		if (array.length < 1) return null;
 		const midIndex = Math.floor(array.length/2);
 		const root = new Node(
@@ -29,13 +28,79 @@ export class Tree {
 		return root;
 	}
 
-	includes(data) {
+	includes(value) {
 		//Check Root
 		const root = this.root;
-		const nodeWithData = this.getNode(root, data);
+		const nodeWithData = this.getNode(root, value);
 		return nodeWithData ? true : false;
 	}
 
+	insert(value) {
+		let node = this.root;
+		if (!node) {
+			this.root = new Node(value);
+		}
+		else {
+			this.insertInnerNode(value, node);
+		}
+	}
+
+//HERE, THE NEW SIMPLE BST DELETION LOGIC BEGINS
+	deleteItem(value) {
+	    const { parent, node, direction } = this.findNodeWithParent(value);
+	    if (!node) return;
+	    
+	    this.walkValueToLeaf(parent, node, direction);
+	}
+	
+	findNodeWithParent(value, node = this.root, parent = null, direction = null) {
+	    if (!node) return { parent: null, node: null, direction: null };
+	    
+	    if (node.data === value) {
+	        return { parent, node, direction };
+	    }
+	    
+	    if (value < node.data) {
+	        return this.findNodeWithParent(value, node.left, node, 'left');
+	    } else {
+	        return this.findNodeWithParent(value, node.right, node, 'right');
+	    }
+	}
+	
+	walkValueToLeaf(parent, node, direction) {
+	    if (!node.left && !node.right) {
+	        parent[direction] = null;
+	        return;
+	    }
+	    
+	    if (direction === 'right') {
+	        while (node.right) {
+	            // Swap values
+	            [node.data, node.right.data] = [node.right.data, node.data];
+	            
+	            // Move down
+	            parent = node;
+	            node = node.right;
+	            direction = 'right';
+	        }
+	    } else {
+	        while (node.left) {
+	            // Swap values
+	            [node.data, node.left.data] = [node.left.data, node.data];
+	            
+	            // Move down
+	            parent = node;
+	            node = node.left;
+	            direction = 'left';
+	        }
+	    }
+	    
+	    // Delete the leaf
+	    parent[direction] = null;
+	} //DELETION DONE
+
+	
+	
 //HELPERS
 	getLeftNode(array, rootMidIndex) {
 		const leftArr = array.slice(0, rootMidIndex)
@@ -62,16 +127,42 @@ export class Tree {
 	}
 
 	getNode(root, data) {
-		const node = root;
+		let node = root;
 		if (!node) return;
+		console.log(node.data, data)
 		if (node.data === data) {
 			return node;
 		}
+		else if (data > node.data) {
+			node = this.getNode(node.right, data) || null;
+		}
+		else if (data < node.data) {
+			node = this.getNode(node.left, data) || null;
+		}
+		return node;
+	}
+
+	insertInnerNode(data, node) {
+		if (data > node.data) {
+			if (node.right === null) {
+				node.right = new Node(data);
+				return;
+			}
+			else {
+				this.insertInnerNode(data, node.right)
+			}
+		}
+		else if(data <  node.data) {
+			if (node.left === null) {
+				node.left = new Node(data);
+				return;
+			}
+			else {
+				this.insertInnerNode(data, node.left)
+			}
+		}
 		else {
-			const rightNode = node.right;
-			const leftNode = node.left;
-			const innerNode = this.getNode(leftNode, data) || this.getNode(rightNode, data);
-			return innerNode || null;
+			//EQUAL VALUES FOUND, DATA IGNORED TO PREVENT DUPLICATES;
 		}
 	}
 
